@@ -1,11 +1,11 @@
 import numpy
 import scipy.sparse as ssp
 
-""" Check wheather p is a transtion matrix
-
-p: a numpy ndarray
-"""
 def is_transition_matrix(p):
+	""" Check whether p is a transtion matrix
+
+	p: a numpy ndarray
+	"""
 	# check whether we have a square matrix
 	if p.ndim == 1:
 		if p.shape != 1:
@@ -17,27 +17,22 @@ def is_transition_matrix(p):
 		return False
 
 	# check whether rows sum to 1
-	return (numpy.abs(p.sum(axis=1)-1) < 1e-12).all()
+	# (be generous with the tolerance, this is not a check for the numerics) 
+	return (numpy.abs(p.sum(axis=1)-1) < 1e-5).all()
 
+def lazy(p):
+	"""
+	For a given transion matrix p, return the lazy version (p+I)/2
+
+	p: a scipy sparse matrix
+	"""
+	return (p.tocsr()+ssp.eye(p.shape[0],format='csr'))/2.
 
 ##################################################################
-# Convert adjancency to (sparse, lazy) srw transition matrices
+# Construct transition matrices from graph adjacency matrices
 ##################################################################
-def adjacency_to_srw_transition_matrix(A):
-	P = A.copy()
-	n = A.shape[0]
 
-	for irow in range(0,n):
-		P[irow,:] = P[irow,:] / P[irow,:].sum()
-
-	return P
-
-def adjacency_to_lazy_srw_transition_matrix(A):
-	n = A.shape[0]
-
-	return (adjacency_to_transition_matrix(A) + numpy.identity(n)) / 2.
-
-def adjacency_to_srw_sparse_transition_matrix(A):
+def graph_srw_transition_matrix(A):
 	(I,J,V) = ssp.find(A)
 	n = A.shape[0]
 
@@ -65,42 +60,18 @@ def adjacency_to_srw_sparse_transition_matrix(A):
 
 	return P.tocsr()
 
-def adjacency_to_lazy_srw_sparse_transition_matrix(A):
-	(I,J,V) = ssp.find(A)
-	n = A.shape[0]
-
-	P = ssp.lil_matrix((n,n))
-	nnz = I.shape[0]
-
-	row_start = 0
-	while row_start < nnz:
-		row = I[row_start]
-
-		# find the end of the row
-		row_end = row_start
-		while row_end < nnz and I[row_end] == row:
-			row_end = row_end+1
-
-		# lazy srw probability
-		p = 0.5 / (row_end-row_start)
-
-		# fill P
-		for row_entry in range(row_start, row_end):
-			P[row, J[row_entry]] = p
-
-		P[row,row] = 0.5
-
-		# continue with the next row
-		row_start = row_end
-
-	return P.tocsr()
-
 ##################################################################
 # Utility methods to create transition matrices
 ##################################################################
 
-# lazy random walk on the line
 def line_lazy_transition_matrix(n, p = 0.5):
+	"""
+	Returns the transition matrix for the lazy biased random walk
+	on the n-path.
+
+	p : probability to go to the higher number not regarding 
+	lazyness (defaults to 0.5) 
+	"""
 	P = ssp.lil_matrix((n,n))
 	P[0,0] = 0.5
 	P[0,1] = 0.5
@@ -112,4 +83,4 @@ def line_lazy_transition_matrix(n, p = 0.5):
 		P[i,i] = 0.5
 		P[i,i+1] = p/2
 
-	return P
+	return P.tocsr()

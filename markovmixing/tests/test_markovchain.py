@@ -4,8 +4,8 @@ from markovmixing import MarkovChain
 import numpy
 
 def test_markov_chain():
-	#  initialization and initial state
-	n = 10
+	#  initialization and initial state (take n>=10000 to challenge the numerics)
+	n = 100
 	mc = MarkovChain(mkm.line_lazy_transition_matrix(n))
 
 	assert(mc.get_n() == n)
@@ -14,20 +14,18 @@ def test_markov_chain():
 	assert(mc.get_num_distributions() == 0)
 
 	# distributions
-	mc.add_distributions(mkm.dirac_delta_distribution(n,0))
-	assert (mc.get_distribution(0) == mkm.dirac_delta_distribution(n,0)).all()
+	mc.add_distributions(mkm.delta_distribution(n,0))
+	assert (mc.get_distribution(0) == mkm.delta_distribution(n,0)).all()
 
-	mc.add_distributions(mkm.random_dirac_delta_distributions(n,3))
+	mc.add_distributions(mkm.random_delta_distributions(n,2))
+	mc.add_distributions(mkm.delta_distribution(n,n-1))
 	assert(mc.get_num_distributions() == 4)
 
 	# iterations
 	assert(mc.get_last_iteration_time(1) == 0)
-	#mc.add_iteration(1,100,mkm.dirac_delta_distribution(n,5))
-	#assert(mc.get_last_iteration_time(1) == 100)
-
 
 	# iterate 
-	mc.iterate_distributions([0],2)
+	mc.iterate_distributions([0],2) # this one will determine the stationary distribution
 	mc.iterate_distributions([0,1,3],5)
 
 	mc.iterate_distributions_to_stationarity([0,2])

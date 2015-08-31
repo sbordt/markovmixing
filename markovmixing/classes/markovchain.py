@@ -54,11 +54,17 @@ class MarkovChain:
 	def add_distributions(self,d):
 		# vector shape
 		if d.ndim == 1:
+			if  mkm.is_distribution(d) == False:
+				raise Exception('not a probability distribution')
+
 			new = {0: d}
 			self.distributions.append(new)
 		# matrix shape
 		else:
 			for i in range(d.shape[0]):
+				if  mkm.is_distribution(d[i,:]) == False:
+					raise Exception('not a probability distribution')
+
 				new = {0: d[i,:]}
 				self.distributions.append(new)
 
@@ -84,6 +90,9 @@ class MarkovChain:
 	########### Methods to manage iterations ###########
 
 	def add_iteration(self,index,t,iteration):
+		if  mkm.is_distribution(iteration) == False:
+			raise Exception('not a probability distribution')
+
 		self.distributions[index][t] = iteration
 
 	"""
@@ -115,6 +124,9 @@ class MarkovChain:
 		return self.sd != None
 
 	def set_stationary_distribution(self,d):
+		if  mkm.is_distribution(d) == False:
+			raise Exception('not a probability distribution')
+
 		self.sd = d
 
 	""" Returns stationary distribution or None if unknown
@@ -126,7 +138,8 @@ class MarkovChain:
 		if self.sd == None:
 			return False
 
-		return mkm.total_variation(dist,self.sd) < 0.05
+		if mkm.total_variation(dist,self.sd) < 0.05:
+			return True
 
 	########### Iterate the distributions! ###########
 
@@ -154,13 +167,14 @@ class MarkovChain:
 
 		# did we find the stationary distribution?
 		# determine this by checking the defintion of stationarity
-		if self.sd == None:
+		# selecting the number of iterations and the threshold is a numerical task
+		if not(self.stationary_distribution_known()):
 			for i in indices:
 				last = self.get_last_iteration(i)
-				last_plus_one = self.p.transpose().dot(last).transpose()
-
+				last_iterated = mkm.iterate_distributions(self.p,last,100)
+				
 				# 1e-6 is a good threshold?
-				if mkm.relative_error(last,last_plus_one) < 1e-6:
+				if mkm.relative_error(last,last_iterated) < 1e-6:
 					self.sd = last
 
 	""" Iterate a number of distributions untill they coincide with the
@@ -208,6 +222,15 @@ class MarkovChain:
 	########### And everything else ###########
 
 	def print_info(self):
+		print "This is a Markov chain with n=%d. The transition matrix is:"  % (self.get_n())
+		print self.get_transition_matrix()
+
+		if self.stationary_distribution_known():
+			print "The stationary distribution is:"
+			print self.get_stationary_distribution()
+		else:
+			print "The stationary distribution in unknown."
+
 		print "The Markov chain has %d distributions with iterations saved at the following timesteps:" % (self.get_num_distributions())
 		for d in range(self.get_num_distributions()):
 			print self.get_iteration_times(d)

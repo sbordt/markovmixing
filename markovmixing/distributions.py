@@ -1,20 +1,45 @@
 import numpy
 import random
 
-def total_variation(my,nu):
-	return abs(my-nu).sum()/2.
+def is_distribution(mu,n=None):
+	"""
+	Check whether mu is a probability distribution. 
 
-def relative_error(my,nu):
-	divisor = numpy.maximum(numpy.minimum(my,nu), 1e-20)
+	x: a numpy ndarray
+	n: the size of the space (optional, defaults to None)
+	"""
+	# essentialy has to be a single row
+	if mu.ndim != 1 and numpy.prod(mu.shape) != mu.shape[1]:
+		return False
+
+	# needs to sum to 1 
+	# (be generous with the tolerance, this is not a check for the numerics)  
+	if numpy.abs(mu.sum()-1) > 1e-4:
+		return False
+
+	# also check that it matches the size of the state space
+	if n != None:
+		if mu.ndim != 1 and mu.shape[1] != n:
+			return False
+		elif mu.ndim == 1 and mu.shape[0] != n:
+			return False
+
+	return True
+
+def total_variation(mu,nu):
+	return abs(mu-nu).sum()/2.
+
+def relative_error(mu,nu):
+	divisor = numpy.maximum(numpy.minimum(mu,nu), 1e-20)
 	
-	return numpy.divide(abs(my-nu), divisor).max()
+	return numpy.divide(abs(mu-nu), divisor).max()
 
-def dirac_delta_distribution(n,x):
+def delta_distribution(n,x=0):
 	d = numpy.zeros(n)
 	d[x] = 1.
 	return d
 
-def random_dirac_delta_distributions(n,k=1):
+def random_delta_distributions(n,k=1):
 	d = numpy.zeros((k,n))
 
 	indices = random.sample(xrange(n),k)
@@ -23,3 +48,21 @@ def random_dirac_delta_distributions(n,k=1):
 		d[i,indices[i]] = 1
 
 	return d
+
+def uniform_distribution(n):
+	"""
+	Returns the uniform distribution on n vertices.
+	"""
+	return numpy.ones(n)/n
+
+def graph_srw_stationary_distribution(A):
+	"""
+	Computes the stationary distribution for a srw on a graph
+	from the graphs adjacency matrix, pi(x) = deg(x)/(2|E|).
+
+	A: a numpy ndarray
+	"""
+	# get vertex degrees by summing over rows
+	degrees = A.sum(axis=1).flatten()*1.0
+
+	return degrees/degrees.sum()
