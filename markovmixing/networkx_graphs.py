@@ -31,22 +31,45 @@ def nx_graph_lazy_srw(G):
 def nx_graph_nbrw(G):
 	import networkx as nx
 
-	raise Exception('not implemented')
+	A = nx.to_scipy_sparse_matrix(G)
+	P = mkm.graph_nbrw_transition_matrix(A)
+	mc = mkm.MarkovChain(P)
+	mc.set_stationary_distribution(mkm.uniform_distribution(mc.get_n()))
 
+	return mc
 
 def nx_graph_analyze_lazy_srw(G):
 	import networkx as nx
 	import matplotlib.pyplot as plt
 
 	mc = mkm.nx_graph_lazy_srw(G)
-	mc.add_distributions(mkm.random_delta_distributions(nx.number_of_nodes(G),1))
+	mc.add_distributions(mkm.random_delta_distributions(mc.get_n(),5))
 	
-	mc.iterate_all_distributions_to_stationarity()
+	mc.compute_tv_mixing()
 
-	(x,tv) = mc.get_distribution_tv_mixing(0)
-	plt.plot(x, tv)
+	plt.figure()
+	for i in range(mc.num_distributions()):
+		(x,tv) = mc.distribution_tv_mixing(i)
+		plt.plot(x, tv)
+
 	plt.xlabel("t")
 	plt.ylabel("Distance to stationary distribution in total variation")
 	plt.show()	
 
-	mc.print_info()
+def nx_graph_analyze_nbrw(G):
+	import networkx as nx
+	import matplotlib.pyplot as plt
+
+	mc = mkm.nx_graph_nbrw(G)
+	mc.add_distributions(mkm.random_delta_distributions(mc.get_n(),5))
+	
+	mc.compute_tv_mixing()
+
+	plt.figure()
+	for i in range(mc.num_distributions()):
+		(x,tv) = mc.distribution_tv_mixing(i)
+		plt.plot(x, tv)
+
+	plt.xlabel("t")
+	plt.ylabel("Distance to stationary distribution in total variation")
+	plt.show()	

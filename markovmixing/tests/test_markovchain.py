@@ -11,7 +11,7 @@ def test_markov_chain():
 	assert(mc.get_n() == n)
 	assert(mc.stationary_distribution_known() == False)
 	assert(mc.get_stationary_distribution() == None)
-	assert(mc.get_num_distributions() == 0)
+	assert(mc.num_distributions() == 0)
 
 	# distributions
 	mc.add_distributions(mkm.delta_distribution(n,0))
@@ -19,13 +19,16 @@ def test_markov_chain():
 
 	mc.add_distributions(mkm.random_delta_distributions(n,2))
 	mc.add_distributions(mkm.delta_distribution(n,n-1))
-	assert(mc.get_num_distributions() == 4)
+	assert(mc.num_distributions() == 4)
 
 	# iterations
-	assert(mc.get_last_iteration_time(1) == 0)
+	assert(mc.last_iteration_time(1) == 0)
 
 	# iterate 
 	mc.iterate_distributions([0],2) # this one will determine the stationary distribution
+	assert(mc.last_iteration_time(0) == 2)
+	assert(mc.next_iteration_time(0,1) == 2)
+
 	mc.iterate_distributions([0,1,3],5)
 
 	mc.iterate_distributions_to_stationarity([0,2])
@@ -34,12 +37,11 @@ def test_markov_chain():
 	# stationary distribution
 
 	# mixing
-	(x,tv) = mc.get_distribution_tv_mixing(1)
-	print x
-	print tv
+	(x,tv) = mc.distribution_tv_mixing(1)
+	mc.compute_tv_mixing()
 
 	# print some stuff
-	mc.print_info()
+	# mc.print_info()
 
 if __name__=="__main__":
     test_markov_chain()

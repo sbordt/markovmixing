@@ -33,6 +33,12 @@ def lazy(p):
 ##################################################################
 
 def graph_srw_transition_matrix(A):
+	"""
+	For a graph given by an adjacency matrix A, construct the 
+	transition matrix of the srw on the graph.
+
+	A: an adjacency matrix, symmetric
+	"""
 	(I,J,V) = ssp.find(A)
 	n = A.shape[0]
 
@@ -59,6 +65,49 @@ def graph_srw_transition_matrix(A):
 		row_start = row_end
 
 	return P.tocsr()
+
+def graph_nbrw_transition_matrix(A):
+	"""
+	For a graph given by an adjacency matrix A, construct the 
+	transition matrix of the nbrw on the graph.
+
+	A: an adjacency matrix, symmetric
+	"""
+	A = A.todok()
+
+	# construct a bijection between edges in the graph
+	# and vertex numbers in the state space of the markov chain
+	edge_to_number = {}
+	number_to_edge = []
+	
+	for edge in A.iterkeys():
+		edge_to_number[edge] = len(number_to_edge)
+		number_to_edge.append(edge)
+
+	# create the transition matrix row by row (that is edge by edge)
+ 	n = len(number_to_edge)
+	P = ssp.lil_matrix((n,n))
+	A = A.tolil()
+
+	for irow,edge_x_y in enumerate(number_to_edge):
+		# find all (y,z)-edges in A
+		z_nodes = []
+
+		for z in A.getrowview(edge_x_y[1]).nonzero()[1]:
+			if z != edge_x_y[0]:
+				z_nodes.append(z)
+
+		# select z uniformly 
+		if len(z_nodes) == 0:
+			raise Exception('NBRW is not well-defined on a graph with vertices of degree 1')
+		p = 1./len(z_nodes)
+
+		# fill the right places in the matrix
+		for z in z_nodes:
+			P[irow,edge_to_number[(edge_x_y[1],z)]] = p
+
+	return P.tocsr()
+
 
 ##################################################################
 # Utility methods to create transition matrices

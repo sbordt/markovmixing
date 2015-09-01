@@ -10,7 +10,7 @@ def test_iteration():
 	P = P.tocsr()
 	
 	# single distribution
-	x = mkm.dirac_delta_distribution(N,0)
+	x = mkm.delta_distribution(N,0)
 	start = time.time()
 	for i in xrange(k):
 		x = P.dot(x)
@@ -19,7 +19,7 @@ def test_iteration():
 	print end - start 
 	print x
 
-	x = mkm.dirac_delta_distribution(N,0)
+	x = mkm.delta_distribution(N,0)
 	start = time.time()
 	x = mkm.matrix_vector_iteration_local(P,x,k)
 	end = time.time()
@@ -27,7 +27,7 @@ def test_iteration():
 	print end - start 
 	print x
 
-	x = mkm.dirac_delta_distribution(N,0)
+	x = mkm.delta_distribution(N,0)
 	start = time.time()
 	x = mkm.matrix_vector_iteration_by_processes(P,x,k)
 	end = time.time()
@@ -36,7 +36,7 @@ def test_iteration():
 	print x
 
 	P = P.transpose()
-	x = mkm.dirac_delta_distribution(N,0)
+	x = mkm.delta_distribution(N,0)
 	start = time.time()
 	x = mkm.iterate_distributions(P,x,k)
 	end = time.time()
@@ -50,7 +50,7 @@ def test_iteration():
 	nd = 10
 
 	random.seed(0)
-	x = mkm.random_dirac_delta_distributions(N,nd).transpose()
+	x = mkm.random_delta_distributions(N,nd).transpose()
 	start = time.time()
 	x = mkm.matrix_vector_iteration_local(P,x,k)
 	end = time.time()
@@ -59,7 +59,7 @@ def test_iteration():
 	print x
 
 	random.seed(0)
-	x = mkm.random_dirac_delta_distributions(N,nd).transpose()
+	x = mkm.random_delta_distributions(N,nd).transpose()
 	start = time.time()
 	x = mkm.matrix_vector_iteration_by_processes(P,x,k)
 	end = time.time()
@@ -69,7 +69,7 @@ def test_iteration():
 
 	random.seed(0)
 	P = P.transpose()
-	x = mkm.random_dirac_delta_distributions(N,nd)
+	x = mkm.random_delta_distributions(N,nd)
 	start = time.time()
 	x = mkm.iterate_distributions(P,x,k).transpose()
 	end = time.time()

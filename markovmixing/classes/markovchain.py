@@ -68,13 +68,13 @@ class MarkovChain:
 				new = {0: d[i,:]}
 				self.distributions.append(new)
 
-	def get_num_distributions(self):
+	def num_distributions(self):
 		return len(self.distributions)
 
 	def get_distribution(self,index):
 		return self.distributions[index][0]
 
-	def get_distribution_tv_mixing(self,index):
+	def distribution_tv_mixing(self,index):
 		if self.sd == None:
 			raise Exception('cant determinde the mixing as long as the stationary distribution is unknown')
 
@@ -104,9 +104,6 @@ class MarkovChain:
 	def get_iteration_times(self,index):
 		return sorted(self.distributions[index].keys())
 
-	def get_last_iteration_time(self,index):
-		return self.get_iteration_times(index)[-1]
-
 	""" The number of iterations is on a per-distribution basis. 
 	"""
 	def get_num_iterations(self,index):
@@ -115,8 +112,24 @@ class MarkovChain:
 	def get_iteration(self,index,t):
 		return self.distributions[index][t]
 
+	def next_iteration_time(self,index,t):
+		"""
+		Get the next iteration time strictly after
+		time 't' for distribution 'index'.
+		"""
+		times = ([ x for x in self.get_iteration_times(index) if x > t])
+
+		if len(times) == 0:
+			raise Exception('There is no iteration after time %d' % (d))
+
+		return times[0]
+		
+
+	def last_iteration_time(self,index):
+		return self.get_iteration_times(index)[-1]
+
 	def get_last_iteration(self,index):
-		return self.distributions[index][self.get_last_iteration_time(index)]
+		return self.distributions[index][self.last_iteration_time(index)]
 
 	########### Methods to manage the stationary distribution ###########
 
@@ -143,18 +156,17 @@ class MarkovChain:
 
 	########### Iterate the distributions! ###########
 
-	""" Iterate a number of distributions k steps from their last iteration.
-
-	This is the core method for iterating distributions invoked by 
-	all other methods.
-
-	It will automatically set the stationary distribution if it is previously unknown
-	and reached during the iteration.
-
-	indices: list containing indices of distributions to be iterated
-	k: number of iterations to perform
-	"""
 	def iterate_distributions(self,indices,k):
+		""" Iterate a number of distributions k steps from their last iteration.
+
+		This is the core method for iterating distributions to stationarity.
+
+		It will automatically set the stationary distribution if it is previously unknown
+		and reached during the iteration.
+
+		indices: list containing indices of distributions to be iterated
+		k: number of iterations to perform
+		"""
 		x = []
 		for i in indices:
 			x.append(self.get_last_iteration(i))
@@ -163,7 +175,7 @@ class MarkovChain:
 		y = mkm.iterate_distributions(self.p,numpy.array(x),k)
 
 		for idx, val in enumerate(indices):
-			self.add_iteration(val,self.get_last_iteration_time(val)+k,y[idx,:])
+			self.add_iteration(val,self.last_iteration_time(val)+k,y[idx,:])
 
 		# did we find the stationary distribution?
 		# determine this by checking the defintion of stationarity
@@ -177,16 +189,13 @@ class MarkovChain:
 				if mkm.relative_error(last,last_iterated) < 1e-6:
 					self.sd = last
 
-	""" Iterate a number of distributions untill they coincide with the
-	stationary distribution.
-
-	indices: list containing indices of distributions to be iterated
-	"""
 	def iterate_distributions_to_stationarity(self,indices,recursion_first_call=True):
-		import time
+		""" Iterate a number of distributions untill they coincide with the
+		stationary distribution.
 
-		if recursion_first_call:
-			print "INFO: Iterating "+`len(indices)`+" distribution(s) for a Markov chain with n="+`self.get_n()`+"."
+		indices: list containing indices of distributions to be iterated
+		"""
+		import time
 
 		# iterate only distributions that are not already close to stationarity
 		# and determine the number of steps to iterate
@@ -196,28 +205,90 @@ class MarkovChain:
 		for i in indices:
 			if not(self.close_to_stationarity(self.get_last_iteration(i))):
 				iteration_indices.append(i)
-				k = min(k,self.get_last_iteration_time(i))
+				k = min(k,self.last_iteration_time(i))
 
-		# break recursion
+		# nothing to do (break recursion)
 		if len(iteration_indices) == 0:
 			return
+
+		if recursion_first_call:
+			print "INFO: Iterating "+`len(indices)`+" distribution(s) to stationarity for a Markov chain with n="+`self.get_n()`+"."
 
 		# iterate		
 		k = max(k,1)
 
 		start = time.time()
 		self.iterate_distributions(iteration_indices,k)
-		end = time.time()
-		seconds = end-start
+		seconds = time.time()-start
 
-		print time.strftime("%d %b %H:%M", time.localtime())+": "+`k`+" step(s) completed (that took %(sec).2f seconds)." % {'sec': seconds}
+		print time.strftime("%d %b %H:%M", time.localtime())+": "+`k`+" iteration step(s) completed (that took %(sec).2f seconds)." % {'sec': seconds}
 
 		# recursion rulez
 		self.iterate_distributions_to_stationarity(indices,recursion_first_call=False)	
 
 	def iterate_all_distributions_to_stationarity(self):
-		self.iterate_distributions_to_stationarity(range(self.get_num_distributions()))
+		self.iterate_distributions_to_stationarity(range(self.num_distributions()))
 		return
+
+	def refine_iterations(self,indices,refine):
+		"""
+		Refine the iterations (that is add iterations in between existing iterations)
+		until they meet a certain criterion.
+
+		indices: list containing indices of distributions to be iterated
+		
+		refine: boolean function of two iterations where a return value of
+		'True' means that an additional iteration in between the 
+		given iterations is necessary
+		"""
+		import time
+
+		print "INFO: Refining "+`len(indices)`+" distribution(s) for a Markov chain with n="+`self.get_n()`+"."
+		print "INFO: Iterating distributions one after another."
+
+		for i in indices:
+			t = 0
+
+			while t != self.last_iteration_time(i):
+				next_t = self.next_iteration_time(i,t)
+
+				while t+1 != next_t and refine(self.get_iteration(i,t), self.get_iteration(i,next_t)) == True:
+					
+					k = int((next_t-t)/2)
+
+					start = time.time()
+					y = mkm.iterate_distributions(self.p,self.get_iteration(i,t),k)
+					seconds = time.time() - start
+					print time.strftime("%d %b %H:%M", time.localtime())+": "+`k`+" iteration step(s) completed (that took %(sec).2f seconds)." % {'sec': seconds}
+
+					self.add_iteration(i,t+k,y)
+					
+					next_t = self.next_iteration_time(i,t)
+
+				t = next_t
+		return
+
+	########### Find mixing in total variation ###########
+
+	def compute_tv_mixing(self,indices=None):
+		""" Compute the mixing in total variation for a number of 
+		distributions. 
+
+		Automatically iterates the distributions to stationarity if necessary.
+
+		indices: list containing indices of distributions for which to find the
+		total variation mixing. Defaults to None (for all distributions).
+
+		Returns nothing.
+		"""
+		if indices == None:
+			indices = range(self.num_distributions()) 
+
+		self.iterate_distributions_to_stationarity(indices)
+
+		# want subsequent iterations to have a maximal difference of 0.1 units 
+		# of total variation (as compared to the stationary distribution)		
+		self.refine_iterations(indices, lambda x,y: abs(mkm.total_variation(x,self.get_stationary_distribution()) - mkm.total_variation(y,self.get_stationary_distribution())) > 0.1 )
 
 	########### And everything else ###########
 
@@ -231,15 +302,15 @@ class MarkovChain:
 		else:
 			print "The stationary distribution in unknown."
 
-		print "The Markov chain has %d distributions with iterations saved at the following timesteps:" % (self.get_num_distributions())
-		for d in range(self.get_num_distributions()):
+		print "The Markov chain has %d distributions with iterations saved at the following timesteps:" % (self.num_distributions())
+		for d in range(self.num_distributions()):
 			print self.get_iteration_times(d)
 
 		print "The distributions:"
-		for d in range(self.get_num_distributions()):
+		for d in range(self.num_distributions()):
 			print self.get_distribution(d)	
 
 		print "The latest iterations are:"
-		for d in range(self.get_num_distributions()):
+		for d in range(self.num_distributions()):
 			print self.get_last_iteration(d)
 
