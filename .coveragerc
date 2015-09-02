@@ -3,6 +3,7 @@
 source = markovmixing
 omit =
     */exampes/*
+    */tests/*
     */python?.?/*
     */lib-python/?.?/*.py
     */lib_pypy/_*.py
