@@ -1,8 +1,8 @@
-# from https://gist.github.com/dan-blanchard/7045057
+# this is a modified version of https://gist.github.com/dan-blanchard/7045057
 language: python
 python:
   - 2.7
-  - 3.3
+# not yet  - 3.3
 notifications:
   email: false
 
@@ -27,8 +27,8 @@ install:
 
 # Run test
 script:
-  - nosetests #--with-cov --cov YOUR_PACKAGE_NAME_HERE --cov-config .coveragerc --logging-level=INFO
+  - nosetests --with-cov --cov markovmixing --cov-config .coveragerc --logging-level=INFO
 
 # Calculate coverage
-#after_success:
-#  - coveralls --config_file .coveragerc
+after_success:
+  - coveralls --config_file .coveragerc

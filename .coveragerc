@@ -1,0 +1,11 @@
+# this is a modified version of https://gist.github.com/dan-blanchard/7045057
+[run]
+source = markovmixing
+omit =
+    */exampes/*
+    */python?.?/*
+    */lib-python/?.?/*.py
+    */lib_pypy/_*.py
+    */site-packages/ordereddict.py
+    */site-packages/nose/*
+    */unittest2/*
