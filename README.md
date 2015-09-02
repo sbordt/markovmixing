@@ -1,6 +1,7 @@
 # MarkovMixing
 
-![Build Status](https://travis-ci.org/sbordt/markovmixing.svg?branch=master) [![Coverage Status](https://coveralls.io/repos/sbordt/markovmixing/badge.svg?branch=master&service=github)](https://coveralls.io/github/sbordt/markovmixing?branch=master)
+![Build Status](https://travis-ci.org/sbordt/markovmixing.svg?branch=master) 
+![Coverage Status](https://coveralls.io/repos/sbordt/markovmixing/badge.svg?branch=master&service=github)
 
 Python package to determine the mixing behaviour of small Markov chains. Markov chains are represented explicitly by their transition matrices, using [scipy sparse matrices](https://docs.scipy.org/doc/scipy-0.14.0/reference/sparse.html). The mixing behaviour is determined by explicitly multiplying distributions on the state place with the transition matrix (many times). 
 
