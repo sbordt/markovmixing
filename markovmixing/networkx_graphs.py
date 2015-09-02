@@ -38,7 +38,7 @@ def nx_graph_nbrw(G):
 
 	return mc
 
-def nx_graph_analyze_lazy_srw(G):
+def nx_graph_analyze_lazy_srw(G): # pragma: no cover
 	import networkx as nx
 	import matplotlib.pyplot as plt
 
@@ -56,7 +56,7 @@ def nx_graph_analyze_lazy_srw(G):
 	plt.ylabel("Distance to stationary distribution in total variation")
 	plt.show()	
 
-def nx_graph_analyze_nbrw(G):
+def nx_graph_analyze_nbrw(G): # pragma: no cover
 	import networkx as nx
 	import matplotlib.pyplot as plt
 

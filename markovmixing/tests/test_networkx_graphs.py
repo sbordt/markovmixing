@@ -4,7 +4,8 @@ import networkx as nx
 
 def test_networkx_graphs():
 	G = nx.path_graph(10)
-	mc = mkm.nx_graph_lazy_srw(G)
+	mc_srw = mkm.nx_graph_srw(G)
+	mc_lswr = mkm.nx_graph_lazy_srw(G)
 
 	G = nx.hypercube_graph(10)
 	print nx.number_of_nodes(G)

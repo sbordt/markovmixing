@@ -41,7 +41,7 @@ def test_markov_chain():
 	mc.compute_tv_mixing()
 
 	# print some stuff
-	# mc.print_info()
+	mc.print_info()
 
 if __name__=="__main__":
     test_markov_chain()

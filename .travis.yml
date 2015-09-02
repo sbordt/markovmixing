@@ -24,11 +24,10 @@ install:
   - pip install networkx
   - python setup.py install
 
-
 # Run test
 script:
-  - nosetests --with-cov --cov markovmixing --cov-config .coveragerc --logging-level=INFO
+  - nosetests --with-coverage
 
 # Calculate coverage
 after_success:
-  - coveralls --config_file .coveragerc
+  - coveralls
