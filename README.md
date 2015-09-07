@@ -42,13 +42,15 @@ This example shows hot to use the package with a networkx graph.
     plt.xlabel("t")
     plt.ylabel("Distance to stationary distribution in total variation")
     plt.show()
+    
+![alt tag](https://raw.githubusercontent.com/sbordt/markovmixing/master/examples/6_regular_srw_mixing.png)
 
 There is also an extra method that plots the mixing in total
 variation for 5 randomly choosen dirac delta distributions.
 
     mkm.nx_graph_analyze_lazy_srw(G_6_regular)
 
-The same is available for the non-backtracking random walk (NBRW).
+The same is available for the non-backtracking random walk (NBRW). The mixing is so regular that the curve looks the same for 5 different initial dirac distributions.
 
     # load a random 3-regular graph with 50.000 nodes from file
     G_3_regular = nx.read_sparse6('3_regular.s6')
@@ -57,6 +59,8 @@ The same is available for the non-backtracking random walk (NBRW).
     # (it is a Markov chain with 150.000 states)
     mkm.nx_graph_analyze_nbrw(G_3_regular)
 
+![alt tag](https://raw.githubusercontent.com/sbordt/markovmixing/master/examples/3_regular_nbrw_mixing.png)
+
 ## References
 
-["Markov Chains and Mixing Times" by Levin, Peres and Wilmer](http://pages.uoregon.edu/dlevin/MARKOV/markovmixing.pdf) is a good book.
+["Markov Chains and Mixing Times" by Levin, Peres and Wilmer](http://pages.uoregon.edu/dlevin/MARKOV/markovmixing.pdf)
