@@ -1,10 +1,12 @@
+""" Deal with transition matrices as scipy sparse matrices.
+"""
 import numpy
 import scipy.sparse as ssp
 
 def is_transition_matrix(p):
-	""" Check whether p is a transtion matrix
+	""" Check whether p is a transtion matrix.
 
-	p: a numpy ndarray
+	p: A numpy ndarray
 	"""
 	# check whether we have a square matrix
 	if p.ndim == 1:
@@ -22,9 +24,9 @@ def is_transition_matrix(p):
 
 def lazy(p):
 	"""
-	For a given transion matrix p, return the lazy version (p+I)/2
+	For a given transion matrix p, return the lazy version (p+I)/2.
 
-	p: a scipy sparse matrix
+	p: A scipy sparse matrix
 	"""
 	return (p.tocsr()+ssp.eye(p.shape[0],format='csr'))/2.
 
@@ -37,7 +39,7 @@ def graph_srw_transition_matrix(A):
 	For a graph given by an adjacency matrix A, construct the 
 	transition matrix of the srw on the graph.
 
-	A: an adjacency matrix, symmetric
+	A: An adjacency matrix, symmetric
 	"""
 	(I,J,V) = ssp.find(A)
 	n = A.shape[0]
@@ -71,7 +73,7 @@ def graph_nbrw_transition_matrix(A):
 	For a graph given by an adjacency matrix A, construct the 
 	transition matrix of the nbrw on the graph.
 
-	A: an adjacency matrix, symmetric
+	A: An adjacency matrix, symmetric
 	"""
 	A = A.todok()
 

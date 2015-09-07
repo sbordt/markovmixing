@@ -36,14 +36,16 @@ def get_nvec(x):
 		return x.shape[1]
 	return 1
 
-"""
-p is a transition matrix
-d is an ndarray where every row is taken as a distribution
-k is the number of iterations
-
-returns the iterated distributions 
-"""
 def iterate_distributions(p,d,k):
+	""" Iterate some probability distributions with respect to a 
+	transition matrix. Uses matrix_vector_iteration to perform the iteration.
+
+	p: A transition matrix
+	d: An ndarray where every row is taken as a distribution
+	k: The number of iterations
+
+	Returns the iterated distributions.
+	"""	
 	# transpose the transition matrix and the distributions
 	# to transform the problem to the standard matrix-vector product setting
 	p = p.transpose()
@@ -51,12 +53,13 @@ def iterate_distributions(p,d,k):
 
 	return matrix_vector_iteration(p,d,k).transpose()
 
-"""
-P is a matrix
-x is an ndarray of column vectors
-k is the number of iterations
-"""
 def matrix_vector_iteration(A,x,k): 
+	""" Iterate some vectors with respect to a matrix.
+
+	A: A matrix
+	x: An ndarray of column vectors
+	k: The number of iterations
+	"""
 	nvec = get_nvec(x)
 	n = A.shape[0]
 

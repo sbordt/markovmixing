@@ -41,17 +41,25 @@ class MarkovChain:
 	########### General methods ###########
 
 	def get_n(self):
+		""" Returns the size of the state space.
+		"""
 		return self.n
 
 	def get_transition_matrix(self):
+		""" Returns the transition matrix.
+		"""
 		return self.p
 
 	########### Methods to manage distributions ###########
 
-	"""
-		d: An ndarray where each row is a distribution
-	"""
 	def add_distributions(self,d):
+		""" Add a number of distributions to the Markov chain.
+
+		A distribution in the sense of this class is an initial
+		distribution on the state space.
+
+			d: An ndarray where each row is a distribution
+		"""
 		# vector shape
 		if d.ndim == 1:
 			if  mkm.is_distribution(d) == False:
@@ -69,53 +77,69 @@ class MarkovChain:
 				self.distributions.append(new)
 
 	def num_distributions(self):
+		""" Returns the number of distributions.
+		"""
 		return len(self.distributions)
 
 	def get_distribution(self,index):
+		""" Get a distribution. Distributions are indexed 0,...,num_distributions-1.
+		"""
 		return self.distributions[index][0]
-
-	def distribution_tv_mixing(self,index):
-		if self.sd == None:
-			raise Exception('cant determinde the mixing as long as the stationary distribution is unknown')
-
-		x = []
-		tv = []
-		
-		for idx,t in enumerate(self.get_iteration_times(index)):
-			x.append(t)
-			tv.append(mkm.total_variation(self.sd,self.get_iteration(index,t)))
-
-		return (x,tv)
 
 	########### Methods to manage iterations ###########
 
 	def add_iteration(self,index,t,iteration):
+		""" Add an iteration for a distribution.
+
+		In the terminology of this class the iteration for a distribution
+		at time t is defined by distribution*P^{t}.
+
+		index: index of the distribution
+		t: iteration time
+		iteration: the iteration
+		"""
 		if  mkm.is_distribution(iteration) == False:
 			raise Exception('not a probability distribution')
 
 		self.distributions[index][t] = iteration
 
-	"""
-		returns the dictionary of iterations
-	"""
 	def get_iterations(self,index):
+		"""Returns the dictionary of all iterations for a given
+		distribution, including the distribution itself at t=0.
+
+		index: index of the distribution
+		"""
 		return self.distributions[index]
 
 	def get_iteration_times(self,index):
+		""" Returns a sorted list containing all iteration times 
+		for a given distribution, including t=0.
+
+		index: index of the distribution
+		"""
 		return sorted(self.distributions[index].keys())
 
-	""" The number of iterations is on a per-distribution basis. 
-	"""
-	def get_num_iterations(self,index):
+	def num_iterations(self,index):
+		""" Returns the number of iterations for a given distribution.
+
+		index: index of the distribution
+		"""
 		return len(self.distributions[index])
 
 	def get_iteration(self,index,t):
+		""" Returns an iterations for a given distribution if present.
+
+		index: index of the distribution
+		t: time at which the iteration is requested
+		"""
 		return self.distributions[index][t]
 
 	def next_iteration_time(self,index,t):
 		"""
 		Get the next iteration time strictly after
 		time 't' for distribution 'index'.
+
+		index: index of the distribution
 		"""
 		times = ([ x for x in self.get_iteration_times(index) if x > t])
 
@@ -126,28 +150,47 @@ class MarkovChain:
 		
 
 	def last_iteration_time(self,index):
+		""" Returns the last iteration time for a given distribution.
+
+		index: index of the distribution
+		"""
 		return self.get_iteration_times(index)[-1]
 
 	def get_last_iteration(self,index):
+		""" Return the last iteration of a given distribution.
+
+		index: index of the distribution
+		"""
 		return self.distributions[index][self.last_iteration_time(index)]
 
 	########### Methods to manage the stationary distribution ###########
 
-	def stationary_distribution_known(self):
+	def stationary_known(self):
+		""" Is the stationary distribution known?
+		"""
 		return self.sd != None
 
-	def set_stationary_distribution(self,d):
+	def set_stationary(self,d):
+		""" Set the stationary distribution.
+
+		d: the stationary distribution
+		"""
 		if  mkm.is_distribution(d) == False:
 			raise Exception('not a probability distribution')
 
 		self.sd = d
 
-	""" Returns stationary distribution or None if unknown
-	"""
-	def get_stationary_distribution(self):
+	def get_stationary(self):
+		""" Returns the stationary distribution or None if unknown
+		"""
 		return self.sd
 
 	def close_to_stationarity(self,dist):
+		""" For a distribution dist, determine if it is "close"
+		to the stationary distribution.
+
+		Currently implemented as total variation distance < 0.05.
+		"""
 		if self.sd == None:
 			return False
 
@@ -180,7 +223,7 @@ class MarkovChain:
 		# did we find the stationary distribution?
 		# determine this by checking the defintion of stationarity
 		# selecting the number of iterations and the threshold is a numerical task
-		if not(self.stationary_distribution_known()):
+		if not(self.stationary_known()):
 			for i in indices:
 				last = self.get_last_iteration(i)
 				last_iterated = mkm.iterate_distributions(self.p,last,100)
@@ -288,7 +331,7 @@ class MarkovChain:
 
 		# want subsequent iterations to have a maximal difference of 0.1 units 
 		# of total variation (as compared to the stationary distribution)		
-		self.refine_iterations(indices, lambda x,y: abs(mkm.total_variation(x,self.get_stationary_distribution()) - mkm.total_variation(y,self.get_stationary_distribution())) > 0.1 )
+		self.refine_iterations(indices, lambda x,y: abs(mkm.total_variation(x,self.get_stationary()) - mkm.total_variation(y,self.get_stationary())) > 0.1 )
 
 	########### And everything else ###########
 
@@ -296,9 +339,9 @@ class MarkovChain:
 		print "This is a Markov chain with n=%d. The transition matrix is:"  % (self.get_n())
 		print self.get_transition_matrix()
 
-		if self.stationary_distribution_known():
+		if self.stationary_known():
 			print "The stationary distribution is:"
-			print self.get_stationary_distribution()
+			print self.get_stationary()
 		else:
 			print "The stationary distribution in unknown."
 
@@ -314,3 +357,46 @@ class MarkovChain:
 		for d in range(self.num_distributions()):
 			print self.get_last_iteration(d)
 
+	def distribution_tv_mixing(self,index):
+		""" Returns a tupel (t,tv) that contains the distance in total variation
+		to stationarity for the given distribution at all known times t.
+
+		Iterates the distribution to stationarity if necessary.
+		"""
+		self.compute_tv_mixing(indices=[index])
+
+		x = []
+		tv = []
+		
+		for idx,t in enumerate(self.get_iteration_times(index)):
+			x.append(t)
+			tv.append(mkm.total_variation(self.sd,self.get_iteration(index,t)))
+
+		return (x,tv)
+
+	def sample_path(self, x0, length):
+		""" Sample a path of the Markov chain.
+
+		x0 : initial state at t=0 
+		length: length of the path
+
+		Returns a list containg the path.
+		"""
+		path = [x0]
+		r = numpy.random.random(length-1)
+
+		for i in xrange(length-1):
+			x = path[-1]
+			d = self.p[x,:]
+			cumsum = 0.
+
+			for y in d.nonzero()[1]:
+				cumsum = cumsum + d[0,y]
+				
+				if r[i] < cumsum:
+					path.append(y)
+					break
+			
+		return path
+
+			

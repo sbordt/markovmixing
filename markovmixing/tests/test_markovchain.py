@@ -9,8 +9,8 @@ def test_markov_chain():
 	mc = MarkovChain(mkm.line_lazy_transition_matrix(n))
 
 	assert(mc.get_n() == n)
-	assert(mc.stationary_distribution_known() == False)
-	assert(mc.get_stationary_distribution() == None)
+	assert(mc.stationary_known() == False)
+	assert(mc.get_stationary() == None)
 	assert(mc.num_distributions() == 0)
 
 	# distributions
@@ -40,7 +40,12 @@ def test_markov_chain():
 	(x,tv) = mc.distribution_tv_mixing(1)
 	mc.compute_tv_mixing()
 
-	# print some stuff
+	# path sampling
+	path = mc.sample_path(1,10)
+	assert(path[0] == 1)
+	assert(len(path) == 10)
+
+	# print 
 	mc.print_info()
 
 if __name__=="__main__":

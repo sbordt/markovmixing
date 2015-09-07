@@ -9,9 +9,7 @@ The package supports general Markov chains with the class MarkovChain. However s
 And now some examples!
     
 ## Examples
-This example shows hot to explicitly use the package with a networkx graph.
-
-
+This example shows hot to use the package with a networkx graph.
 
     import markovmixing as mkm
     import networkx as nx
@@ -44,7 +42,20 @@ This example shows hot to explicitly use the package with a networkx graph.
     plt.ylabel("Distance to stationary distribution in total variation")
     plt.show()
 
+There is also an extra method that plots the mixing in total
+variation for 5 randomly choosen dirac delta distributions.
+
+    mkm.nx_graph_analyze_lazy_srw(G_6_regular)
+
+The same is available for the non-backtracking random walk (NBRW).
+
+    # load a random 3-regular graph with 50.000 nodes from file
+    G_3_regular = nx.read_sparse6('3_regular.s6')
+
+    # analyze the mixing in total variation of the NBRW on the graph 
+    # (it is a Markov chain with 150.000 states)
+    mkm.nx_graph_analyze_nbrw(G_3_regular)
+
 ## References
 
-   
 ["Markov Chains and Mixing Times" by Levin, Peres and Wilmer](http://pages.uoregon.edu/dlevin/MARKOV/markovmixing.pdf) is a good book.
