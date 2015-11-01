@@ -29,6 +29,7 @@ This example shows hot to use the package with a networkx graph.
     mc = mkm.MarkovChain(P)
 
     # stationary distribution of SRW on a graph is deg(x)/2*|E|
+    mc.set_stationary(mkm.graph_srw_stationary_distribution(A))
 
     # add a random starting position to the Markov chain
     mc.add_distributions(mkm.random_delta_distributions(mc.get_n(),1))

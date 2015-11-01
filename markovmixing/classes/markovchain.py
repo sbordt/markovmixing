@@ -76,6 +76,14 @@ class MarkovChain:
 				new = {0: d[i,:]}
 				self.distributions.append(new)
 
+	def add_random_delta_distributions(self,k=1):
+		""" Convenience method that adds random delta distribution 
+		to the Markov chain.
+
+			k: Number of distributions to add. Defaults to 1.
+		"""
+		self.add_distributions(mkm.random_delta_distributions(self.n, k))
+
 	def num_distributions(self):
 		""" Returns the number of distributions.
 		"""
@@ -362,6 +370,8 @@ class MarkovChain:
 		to stationarity for the given distribution at all known times t.
 
 		Iterates the distribution to stationarity if necessary.
+
+		index: index of the distribution
 		"""
 		self.compute_tv_mixing(indices=[index])
 
@@ -373,6 +383,44 @@ class MarkovChain:
 			tv.append(mkm.total_variation(self.sd,self.get_iteration(index,t)))
 
 		return (x,tv)
+
+	def plot_tv_mixing(self,index):
+		""" Plots the total variation mixing for a given distribution.
+
+		Iterates the distribution to stationarity if necessary.
+
+		index: index of the distribution of wich the mixing should be plotted
+		"""
+		import matplotlib.pyplot as plt
+
+		(x,tv) = self.distribution_tv_mixing(index)
+
+		plt.plot(x, tv)
+		plt.title("Convergence to the stationary distribution")
+		plt.xlabel("n")
+		plt.ylabel("Total variation distance to the stationary distribution")
+
+		plt.show()
+
+	def plot_iteration(self,index,t):
+		""" Plots an iteration (a probability distribution). 
+
+		The iteration has to exist.
+
+		index: index of the distribution of which the iteration should be plotted
+		t: iteration time
+		"""
+		import matplotlib.pyplot as plt
+
+		iteration = self.get_iteration(index,t)
+
+		plt.plot(numpy.arange(self.n), iteration)
+		plt.title("Probability distribution after %d steps" % (t))
+		plt.xlabel("Markov chain state space")
+		plt.ylabel("Probabiliy")
+		plt.ylim(0, 1.1*numpy.max(iteration))
+
+		plt.show()
 
 	def sample_path(self, x0, length):
 		""" Sample a path of the Markov chain.

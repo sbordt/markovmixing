@@ -2,6 +2,7 @@
 """
 import numpy
 import scipy.sparse as ssp
+import markovmixing as mkm
 
 def is_transition_matrix(p):
 	""" Check whether p is a transtion matrix.
@@ -127,11 +128,37 @@ def line_lazy_transition_matrix(n, p = 0.5):
 	P[0,0] = 0.5
 	P[0,1] = 0.5
 	P[n-1,n-1] = 0.5
-	P[n-1, n-2] = 0.5
+	P[n-1,n-2] = 0.5
 
 	for i in range(1,n-1):
 		P[i,i-1] = (1-p)/2
 		P[i,i] = 0.5
 		P[i,i+1] = p/2
+
+	return P.tocsr()
+
+def circle_transition_matrix(n, p = 0.5, lazy = True):
+	"""
+	Returns the transition matrix for the (possibly lazy) biased random walk
+	on the n-cycle.
+
+	p : probability to go to the higher number not regarding 
+	lazyness (defaults to 0.5) 
+	lazy: should the walk be lazy? Defaults to True
+	"""
+	P = ssp.lil_matrix((n,n))
+	
+	P[0,n-1] = (1-p)
+	P[0,1] = p
+
+	P[n-1,n-2] = (1-p)
+	P[n-1,0] = p
+
+	for i in range(1,n-1):
+		P[i,i-1] = (1-p)
+		P[i,i+1] = p
+
+	if lazy:
+		P = mkm.lazy(P)
 
 	return P.tocsr()
