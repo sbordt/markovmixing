@@ -23,6 +23,8 @@ def test_markov_chain():
 
 	# iterations
 	assert(mc.last_iteration_time(1) == 0)
+	assert (mc.closest_iteration_time(0,0) == 0)
+	assert (mc.closest_iteration_time(0,5) == 0)
 
 	# iterate 
 	mc.iterate_distributions([0],2) # this one will determine the stationary distribution
@@ -47,6 +49,11 @@ def test_markov_chain():
 
 	# print 
 	mc.print_info()
+
+	# plot an iteration
+	#mc.plot_iteration(0,55)
+
+	#mc.convergence_video('/home/sbordt/Desktop/output.avi', 0, 2)
 
 if __name__=="__main__":
     test_markov_chain()

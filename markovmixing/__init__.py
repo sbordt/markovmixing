@@ -8,4 +8,6 @@ from markovmixing.classes import *
 
 from markovmixing.networkx_graphs import *
 
+from markovmixing.video_util import *
+
 from markovmixing.tests import *

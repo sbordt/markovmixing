@@ -111,6 +111,34 @@ def graph_nbrw_transition_matrix(A):
 
 	return P.tocsr()
 
+##################################################################
+# Methods to merge transition matrices, i.e. combine 
+# different Markov chains. Usefull for the construction 
+# of chains.
+##################################################################
+
+def merge_transition_matrices(P, M, n_1, n_2, p):
+	""" Merge the Markov chain given by transition matrix M into 
+	the chain given by transition matrix P. 
+
+	The states of the new
+ 	chain will be numbered as follows:
+
+ 	0-(n-1): states 0-(n-1) of the first chain
+ 	n-(n+number of states of the second chain): states of the second chain
+
+
+	P1: first transion matrix
+	P2: second transition matrix
+
+	Returns the (newly created) transition matrix of the merged chain.
+	"""
+	P = P_1.copy()
+	M = M.todok()
+
+
+
+
 
 ##################################################################
 # Utility methods to create transition matrices

@@ -152,17 +152,35 @@ class MarkovChain:
 		times = ([ x for x in self.get_iteration_times(index) if x > t])
 
 		if len(times) == 0:
-			raise Exception('There is no iteration after time %d' % (d))
+			raise Exception('There is no iteration after time %d' % (t))
 
 		return times[0]
 		
-
 	def last_iteration_time(self,index):
 		""" Returns the last iteration time for a given distribution.
 
 		index: index of the distribution
 		"""
 		return self.get_iteration_times(index)[-1]
+
+	def closest_iteration_time(self,index,t):
+		""" Returns a time where an iterations exists, as close
+		as possible to t.
+
+		index: index of the distribution
+		"""
+		if  t<0:
+			raise Exception('t must be greater or equal than zero')
+
+		for j,time in enumerate(self.get_iteration_times(index)):
+			if t < time: # this can never happen for j=0
+				prev_time = self.get_iteration_times(index)[j-1]
+
+				if time-t<=t-prev_time:
+					return time
+				return prev_time
+
+		return self.last_iteration_time(index)
 
 	def get_last_iteration(self,index):
 		""" Return the last iteration of a given distribution.
@@ -193,11 +211,13 @@ class MarkovChain:
 		"""
 		return self.sd
 
-	def close_to_stationarity(self,dist):
+	def close_to_stationarity(self,dist,tv_tol=0.05):
 		""" For a distribution dist, determine if it is "close"
 		to the stationary distribution.
 
-		Currently implemented as total variation distance < 0.05.
+		Currently implemented as total variation distance < tv_tol.
+
+		tv_tol: Desired tolerance in total variation. Defaults to 0.05.
 		"""
 		if self.sd == None:
 			return False
@@ -207,13 +227,13 @@ class MarkovChain:
 
 	########### Iterate the distributions! ###########
 
-	def iterate_distributions(self,indices,k):
+	def iterate_distributions(self,indices,k,tv_tol=0.05):
 		""" Iterate a number of distributions k steps from their last iteration.
 
 		This is the core method for iterating distributions to stationarity.
 
-		It will automatically set the stationary distribution if it is previously unknown
-		and reached during the iteration.
+		If the number of distributions is >= 3, it will automatically 
+		set the stationary distribution, if unknown and found.
 
 		indices: list containing indices of distributions to be iterated
 		k: number of iterations to perform
@@ -228,33 +248,61 @@ class MarkovChain:
 		for idx, val in enumerate(indices):
 			self.add_iteration(val,self.last_iteration_time(val)+k,y[idx,:])
 
-		# did we find the stationary distribution?
-		# determine this by checking the defintion of stationarity
-		# selecting the number of iterations and the threshold is a numerical task
-		if not(self.stationary_known()):
+		# check if we found the stationary distribution
+		if len(indices) >= 3:
+			# first check the definition of stationarity for all iterations
 			for i in indices:
 				last = self.get_last_iteration(i)
 				last_iterated = mkm.iterate_distributions(self.p,last,100)
-				
-				# 1e-6 is a good threshold?
-				if mkm.relative_error(last,last_iterated) < 1e-6:
-					self.sd = last
+						
+				# is 1e-6 a good threshold?
+				if mkm.relative_error(last,last_iterated) > 1e-6:
+					return
 
-	def iterate_distributions_to_stationarity(self,indices,recursion_first_call=True):
+			# check pairwise distance <= tol
+			for i in indices:
+				d_i = self.get_last_iteration(i)
+
+				for j in indices:
+					d_j = self.get_last_iteration(j)
+
+					if mkm.total_variation(d_i, d_j) > tv_tol:
+						return
+
+			# take the arithmetic mean of all iterations as the stationary distribution
+			stationary_candidate = numpy.zeros(self.n)
+
+			for i in indices:
+				stationary_candidate = stationary_candidate + self.get_last_iteration(i)
+
+			stationary_candidate = stationary_candidate / len(indices)
+
+			self.set_stationary(stationary_candidate)			
+
+	def iterate_distributions_to_stationarity(self,indices,tv_tol=0.05,recursion_first_call=True):
 		""" Iterate a number of distributions untill they coincide with the
 		stationary distribution.
 
 		indices: list containing indices of distributions to be iterated
+		tv_tol: tolerance in total variation distance for the determination of convergence.
+		Defaults to 0.05
 		"""
 		import time
+
+		# if the stationary distribution is unknown, add two random delta distributions
+		if recursion_first_call and not(self.stationary_known()):
+			self.add_random_delta_distributions(2)
+			indices.extend([self.num_distributions()-2,self.num_distributions()-1])
+	
+			print "INFO: Added two random delta distributions, since the stationary distribution is unknown. They will help to find the stationary distribution."
 
 		# iterate only distributions that are not already close to stationarity
 		# and determine the number of steps to iterate
 		iteration_indices = []
-		k = 1000000					# perform maximally 1 Mio. steps at once
+		k = 1000000					# at most 1 Mio. steps at once
 
 		for i in indices:
-			if not(self.close_to_stationarity(self.get_last_iteration(i))):
+			if not(self.close_to_stationarity(self.get_last_iteration(i), tv_tol=tv_tol)):
 				iteration_indices.append(i)
 				k = min(k,self.last_iteration_time(i))
 
@@ -269,13 +317,13 @@ class MarkovChain:
 		k = max(k,1)
 
 		start = time.time()
-		self.iterate_distributions(iteration_indices,k)
+		self.iterate_distributions(iteration_indices,k,tv_tol=tv_tol)
 		seconds = time.time()-start
 
 		print time.strftime("%d %b %H:%M", time.localtime())+": "+`k`+" iteration step(s) completed (that took %(sec).2f seconds)." % {'sec': seconds}
 
 		# recursion rulez
-		self.iterate_distributions_to_stationarity(indices,recursion_first_call=False)	
+		self.iterate_distributions_to_stationarity(indices, tv_tol=tv_tol, recursion_first_call=False)	
 
 	def iterate_all_distributions_to_stationarity(self):
 		self.iterate_distributions_to_stationarity(range(self.num_distributions()))
@@ -290,7 +338,7 @@ class MarkovChain:
 		
 		refine: boolean function of two iterations where a return value of
 		'True' means that an additional iteration in between the 
-		given iterations is necessary
+		given iterations is necessary (i.e. refine(t1, iteration1, t2, iteration2))
 		"""
 		import time
 
@@ -303,8 +351,8 @@ class MarkovChain:
 			while t != self.last_iteration_time(i):
 				next_t = self.next_iteration_time(i,t)
 
-				while t+1 != next_t and refine(self.get_iteration(i,t), self.get_iteration(i,next_t)) == True:
-					
+				while t+1 != next_t and refine(t, self.get_iteration(i,t), next_t, self.get_iteration(i,next_t)) == True:
+
 					k = int((next_t-t)/2)
 
 					start = time.time()
@@ -339,7 +387,7 @@ class MarkovChain:
 
 		# want subsequent iterations to have a maximal difference of 0.1 units 
 		# of total variation (as compared to the stationary distribution)		
-		self.refine_iterations(indices, lambda x,y: abs(mkm.total_variation(x,self.get_stationary()) - mkm.total_variation(y,self.get_stationary())) > 0.1 )
+		self.refine_iterations(indices, lambda t1,x1,t2,x2: abs(mkm.total_variation(x1,self.get_stationary()) - mkm.total_variation(x2,self.get_stationary())) > 0.1 )
 
 	########### And everything else ###########
 
@@ -413,14 +461,63 @@ class MarkovChain:
 		import matplotlib.pyplot as plt
 
 		iteration = self.get_iteration(index,t)
-
-		plt.plot(numpy.arange(self.n), iteration)
+		plt.bar(numpy.arange(self.n), iteration, align='edge', width=1.0)
+		#plt.plot(numpy.arange(self.n), iteration)
 		plt.title("Probability distribution after %d steps" % (t))
 		plt.xlabel("Markov chain state space")
 		plt.ylabel("Probabiliy")
+
+		plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+		
+		plt.xlim(0, self.n)
 		plt.ylim(0, 1.1*numpy.max(iteration))
 
 		plt.show()
+
+	def convergence_video(self,path,index,seconds):
+		"""
+		"""
+		import matplotlib.pyplot as plt
+
+		nframes = 100*seconds
+
+		# first iterate the distribution to stationarity (if that has not been done already)
+		self.iterate_distributions_to_stationarity([index])
+
+		# we want the video to end once the stationary distribution is reached
+		t_end = self.last_iteration_time(index)
+
+		for t in self.get_iteration_times(index):
+			if mkm.total_variation(self.get_iteration(index,t), self.get_stationary()) < 0.01:
+				t_end = int(t*1.05)
+				break
+
+		frametime = t_end/float(nframes)
+
+		# if possible, we want an iteration for every frame
+		self.refine_iterations([index], lambda t1,x1,t2,x2: (t1<=t_end or t2<=t_end) and abs(t1-t2) > frametime)
+
+		def frame(i):
+			fig = plt.figure(figsize=(19.20, 10.80), dpi=100)
+
+			# time of closest iteration
+			t = self.closest_iteration_time(index,i*frametime)
+
+			iteration = self.get_iteration(index,t)
+			plt.bar(numpy.arange(self.n), iteration, align='edge', width=1.0)
+		
+			plt.title("Probability distribution after %d steps" % (t))
+			plt.xlabel("Markov chain state space")
+			plt.ylabel("Probabiliy")
+
+			plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+		
+			plt.xlim(0, self.n)
+			plt.ylim(0, 1.1*numpy.max(iteration))
+
+			return fig
+
+		mkm.matplotlib_plots_to_video(path, frame, nframes)
 
 	def sample_path(self, x0, length):
 		""" Sample a path of the Markov chain.
