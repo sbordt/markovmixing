@@ -135,16 +135,28 @@ class MarkovChain:
 		return len(self.distributions[index])
 
 	def get_iteration(self,index,t):
-		""" Returns an iterations for a given distribution if present.
+		""" Returns an iteration for a given distribution if present.
 
 		index: index of the distribution
 		t: time at which the iteration is requested
 		"""
 		return self.distributions[index][t]
 
-	def next_iteration_time(self,index,t):
+	def previous_iteration_time(self,index,t):
+		""" Get the iteration time strictly before
+		time 't' for distribution 'index'.
+
+		index: index of the distribution
 		"""
-		Get the next iteration time strictly after
+		times = ([ x for x in self.get_iteration_times(index) if x < t])
+
+		if len(times) == 0:
+			raise Exception('There is no iteration before time %d' % (t))
+
+		return times[-1]
+
+	def next_iteration_time(self,index,t):
+		""" Get the next iteration time strictly after
 		time 't' for distribution 'index'.
 
 		index: index of the distribution
@@ -222,7 +234,7 @@ class MarkovChain:
 		if self.sd == None:
 			return False
 
-		if mkm.total_variation(dist,self.sd) < 0.05:
+		if mkm.total_variation(dist,self.sd) < tv_tol:
 			return True
 
 	########### Iterate the distributions! ###########
@@ -290,7 +302,7 @@ class MarkovChain:
 		import time
 
 		# if the stationary distribution is unknown, add two random delta distributions
-		if recursion_first_call and not(self.stationary_known()):
+		if recursion_first_call and not(self.stationary_known()) and len(indices)<3:
 			self.add_random_delta_distributions(2)
 			indices.extend([self.num_distributions()-2,self.num_distributions()-1])
 	
@@ -367,9 +379,27 @@ class MarkovChain:
 				t = next_t
 		return
 
-	########### Find mixing in total variation ###########
+	def assert_iteration(self,indices,t):
+		""" For the distributions given by indices, assert that there exists
+		an iteration at time t.
 
-	def compute_tv_mixing(self,indices=None):
+		indices: list with indices of distributions
+		t: time 
+		"""
+		for i in indices:
+			t0 = 0
+
+			for t1 in self.get_iteration_times(i):
+				if t1 > t0 and t1 <= t:
+					t0 = t1
+
+			if t0 != t:
+				y = mkm.iterate_distributions(self.p,self.get_iteration(i,t0),t-t0)
+				self.add_iteration(i,t,y)
+
+	########### Methods to determine the mixing in total variation ###########
+
+	def compute_tv_mixing(self,indices=None,convergence_tol=0.05,refinement_tol=0.1):
 		""" Compute the mixing in total variation for a number of 
 		distributions. 
 
@@ -377,52 +407,28 @@ class MarkovChain:
 
 		indices: list containing indices of distributions for which to find the
 		total variation mixing. Defaults to None (for all distributions).
+		convergence_tol: tolerance in total variation distance for the determination of convergence.
+		Defaults to 0.05. 
+		refinement_tol: maximum distance in total variation between two iterations. If the 
+		mixing is plotted, this corresponds to the smoothness of the graph. Defaults to 0.1.
 
 		Returns nothing.
 		"""
 		if indices == None:
 			indices = range(self.num_distributions()) 
 
-		self.iterate_distributions_to_stationarity(indices)
+		self.iterate_distributions_to_stationarity(indices, tv_tol=convergence_tol)
 
-		# want subsequent iterations to have a maximal difference of 0.1 units 
+		# want subsequent iterations to have a maximal difference of refinement_tol units 
 		# of total variation (as compared to the stationary distribution)		
-		self.refine_iterations(indices, lambda t1,x1,t2,x2: abs(mkm.total_variation(x1,self.get_stationary()) - mkm.total_variation(x2,self.get_stationary())) > 0.1 )
-
-	########### And everything else ###########
-
-	def print_info(self):
-		print "This is a Markov chain with n=%d. The transition matrix is:"  % (self.get_n())
-		print self.get_transition_matrix()
-
-		if self.stationary_known():
-			print "The stationary distribution is:"
-			print self.get_stationary()
-		else:
-			print "The stationary distribution in unknown."
-
-		print "The Markov chain has %d distributions with iterations saved at the following timesteps:" % (self.num_distributions())
-		for d in range(self.num_distributions()):
-			print self.get_iteration_times(d)
-
-		print "The distributions:"
-		for d in range(self.num_distributions()):
-			print self.get_distribution(d)	
-
-		print "The latest iterations are:"
-		for d in range(self.num_distributions()):
-			print self.get_last_iteration(d)
+		self.refine_iterations(indices, lambda t1,x1,t2,x2: abs(mkm.total_variation(x1,self.get_stationary()) - mkm.total_variation(x2,self.get_stationary())) > refinement_tol)
 
 	def distribution_tv_mixing(self,index):
 		""" Returns a tupel (t,tv) that contains the distance in total variation
 		to stationarity for the given distribution at all known times t.
 
-		Iterates the distribution to stationarity if necessary.
-
 		index: index of the distribution
 		"""
-		self.compute_tv_mixing(indices=[index])
-
 		x = []
 		tv = []
 		
@@ -432,21 +438,70 @@ class MarkovChain:
 
 		return (x,tv)
 
-	def plot_tv_mixing(self,index):
-		""" Plots the total variation mixing for a given distribution.
+	########### Plot and video creation ###########
 
-		Iterates the distribution to stationarity if necessary.
+	def plot_tv_mixing(self,indices=None,y_tol=0.1,threshold=0.05,text=True):
+		""" Plots the total variation mixing for a given number
+		of distributions.
 
-		index: index of the distribution of wich the mixing should be plotted
+		Iterates the distributions to stationarity if necessary.
+
+		The x-limit of the plot will be choosen such that the total varation distance
+		to stationarity of all distributions is below threshold.
+
+		indices: list with indices of distributions for which to plot the 
+		mixing. Can also be an integer, indicating a single distribution.
+		Defaults to None (for all distributions).
+		
+		y_tol: maximum y-distance between to data points on the same graph
+
+		threshold: determines the x-limit of the plot. Defaults to 0.05.
+
+		text: if the plot should contain axis labels and a title
+		
 		"""
 		import matplotlib.pyplot as plt
 
-		(x,tv) = self.distribution_tv_mixing(index)
+		if indices == None:
+			indices = range(self.num_distributions()) 
 
-		plt.plot(x, tv)
-		plt.title("Convergence to the stationary distribution")
-		plt.xlabel("n")
-		plt.ylabel("Total variation distance to the stationary distribution")
+		if isinstance(indices, int):
+			indices = [indices]
+
+		# iterate distributions to stationarity, given the desired threshold
+		self.compute_tv_mixing(indices, convergence_tol=threshold, refinement_tol=y_tol)
+
+		# determine the x-limit of the plot
+		xlim = 5
+
+		for index in indices:
+			for t in self.get_iteration_times(index):
+				if t > xlim and mkm.total_variation(self.sd,self.get_iteration(index,t)) > threshold:
+					xlim = t
+
+		self.assert_iteration(indices, xlim)
+		self.compute_tv_mixing(indices, convergence_tol=threshold, refinement_tol=y_tol) # need the refinement
+
+		# plot
+		for index in indices:
+			x = []
+			tv = []
+					
+			for t in self.get_iteration_times(index):
+				if t > xlim:
+					continue
+				x.append(t)
+				tv.append(mkm.total_variation(self.sd,self.get_iteration(index,t)))
+
+			plt.plot(x, tv)
+
+		plt.xlim(0, xlim)
+		plt.ylim(0, 1)
+
+		if text:
+			plt.title("Convergence to the stationary distribution")
+			plt.xlabel("t")
+			plt.ylabel("Total variation distance to the stationary distribution")
 
 		plt.show()
 
@@ -461,8 +516,9 @@ class MarkovChain:
 		import matplotlib.pyplot as plt
 
 		iteration = self.get_iteration(index,t)
-		plt.bar(numpy.arange(self.n), iteration, align='edge', width=1.0)
-		#plt.plot(numpy.arange(self.n), iteration)
+
+		mkm.pyplot_bar(iteration)
+
 		plt.title("Probability distribution after %d steps" % (t))
 		plt.xlabel("Markov chain state space")
 		plt.ylabel("Probabiliy")
@@ -504,7 +560,7 @@ class MarkovChain:
 			t = self.closest_iteration_time(index,i*frametime)
 
 			iteration = self.get_iteration(index,t)
-			plt.bar(numpy.arange(self.n), iteration, align='edge', width=1.0)
+			mkm.pyplot_bar(iteration)
 		
 			plt.title("Probability distribution after %d steps" % (t))
 			plt.xlabel("Markov chain state space")
@@ -518,6 +574,30 @@ class MarkovChain:
 			return fig
 
 		mkm.matplotlib_plots_to_video(path, frame, nframes)
+
+	########### Miscellaneous methods ###########
+
+	def print_info(self):
+		print "This is a Markov chain with n=%d. The transition matrix is:"  % (self.get_n())
+		print self.get_transition_matrix()
+
+		if self.stationary_known():
+			print "The stationary distribution is:"
+			print self.get_stationary()
+		else:
+			print "The stationary distribution in unknown."
+
+		print "The Markov chain has %d distributions with iterations saved at the following timesteps:" % (self.num_distributions())
+		for d in range(self.num_distributions()):
+			print self.get_iteration_times(d)
+
+		print "The distributions:"
+		for d in range(self.num_distributions()):
+			print self.get_distribution(d)	
+
+		print "The latest iterations are:"
+		for d in range(self.num_distributions()):
+			print self.get_last_iteration(d)
 
 	def sample_path(self, x0, length):
 		""" Sample a path of the Markov chain.

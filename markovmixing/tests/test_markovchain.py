@@ -36,6 +36,13 @@ def test_markov_chain():
 	mc.iterate_distributions_to_stationarity([0,2])
 	mc.iterate_all_distributions_to_stationarity()
 
+	# assert iteration time and prev & next iteration time
+	mc.assert_iteration([0], 99)
+	mc.assert_iteration([0], 101)
+
+	assert(mc.previous_iteration_time(0,100) == 99)
+	assert(mc.next_iteration_time(0,100) == 101)
+
 	# stationary distribution
 
 	# mixing
@@ -51,7 +58,7 @@ def test_markov_chain():
 	mc.print_info()
 
 	# plot an iteration
-	#mc.plot_iteration(0,55)
+	#mc.plot_iteration(0,71)
 
 	#mc.convergence_video('/home/sbordt/Desktop/output.avi', 0, 2)
 
