@@ -228,7 +228,7 @@ def hypercube_transition_matrix(n, lazy = True):
 	P = ssp.lil_matrix((k,k))
 	p = 1./n
 
- 	# use our infinite wisdom on bitwise operators to swap one bit
+ 	# use our infinite wisdom on bitwise operators to swap bit j in the number i
 	for i in range(0,k):
 		for j in range(0,n):
 			P[i, i ^ ( (i ^ (~ (i & (1 << j))) ) & (1 << j) )] = p

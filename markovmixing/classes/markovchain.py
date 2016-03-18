@@ -355,8 +355,9 @@ class MarkovChain:
 		import time
 
 		print "INFO: Refining "+`len(indices)`+" distribution(s) for a Markov chain with n="+`self.get_n()`+"."
-		print "INFO: Iterating distributions one after another."
+		print "INFO: For multiple distributions, refinement might take longer than iterating to stationarity."
 
+		# Iterating distributions one after another
 		for i in indices:
 			t = 0
 
@@ -370,7 +371,6 @@ class MarkovChain:
 					start = time.time()
 					y = mkm.iterate_distributions(self.p,self.get_iteration(i,t),k)
 					seconds = time.time() - start
-					print time.strftime("%d %b %H:%M", time.localtime())+": "+`k`+" iteration step(s) completed (that took %(sec).2f seconds)." % {'sec': seconds}
 
 					self.add_iteration(i,t+k,y)
 					
@@ -378,6 +378,8 @@ class MarkovChain:
 
 				t = next_t
 		return
+
+		print "INFO: Done."
 
 	def assert_iteration(self,indices,t):
 		""" For the distributions given by indices, assert that there exists
