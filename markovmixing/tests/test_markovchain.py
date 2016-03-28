@@ -17,7 +17,7 @@ def test_markov_chain():
 	mc.add_distributions(mkm.delta_distribution(n,0))
 	assert (mc.get_distribution(0) == mkm.delta_distribution(n,0)).all()
 
-	mc.add_distributions(mkm.random_delta_distributions(n,2))
+	mc.add_random_delta_distributions(2)
 	mc.add_distributions(mkm.delta_distribution(n,n-1))
 	assert(mc.num_distributions() == 4)
 

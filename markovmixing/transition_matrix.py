@@ -6,32 +6,32 @@ import numpy
 import scipy.sparse as ssp
 import markovmixing as mkm
 
-def is_transition_matrix(p):
+def is_transition_matrix(P):
 	""" Check whether p is a transtion matrix.
 
-	p: A numpy ndarray
+	P: A numpy ndarray
 	"""
 	# check whether we have a square matrix
-	if p.ndim == 1:
-		if p.shape != 1:
+	if P.ndim == 1:
+		if P.shape != 1:
 			return False
-	elif p.ndim == 2:
-		if p.shape[0] != p.shape[1]:
+	elif P.ndim == 2:
+		if P.shape[0] != P.shape[1]:
 			return false
 	else: 
 		return False
 
 	# check whether rows sum to 1
 	# (be generous with the tolerance, this is not a check for the numerics) 
-	return (numpy.abs(p.sum(axis=1)-1) < 1e-5).all()
+	return (numpy.abs(P.sum(axis=1)-1) < 1e-5).all()
 
-def lazy(p):
+def lazy(P):
 	"""
-	For a given transion matrix p, return the lazy version (p+I)/2.
+	For a given transion matrix P, return the lazy version (P+I)/2.
 
-	p: A scipy sparse matrix
+	P: A scipy sparse matrix
 	"""
-	return (p.tocsr()+ssp.eye(p.shape[0],format='csr'))/2.
+	return (P.tocsr()+ssp.eye(P.shape[0],format='csr'))/2.
 
 ##################################################################
 # Construct transition matrices from graph adjacency matrices
@@ -124,7 +124,7 @@ def tree_nbrw_transition_matrix(A, root):
 	For a rooted tree given by an adjacency matrix A and a root, construct the 
 	transition matrix of the nbrw on the tree, starting at the root.
 
-	Transition and adjacency matrix have the same dimesion, and the
+	Transition and adjacency matrix have the same dimension, and the
 	indexing of states corresponds.
 
 	The nbrw will stay at leaves with probability 1.

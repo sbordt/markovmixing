@@ -1,4 +1,4 @@
-"""This module contains various methods to setup Markov chains
+"""This module contains methods to setup Markov chains
 as random walks on graphs from the networkx package.
 """
 
@@ -40,38 +40,3 @@ def nx_graph_nbrw(G):
 
 	return mc
 
-def nx_graph_analyze_lazy_srw(G): # pragma: no cover
-	import networkx as nx
-	import matplotlib.pyplot as plt
-
-	mc = mkm.nx_graph_lazy_srw(G)
-	mc.add_distributions(mkm.random_delta_distributions(mc.get_n(),5))
-	
-	mc.compute_tv_mixing()
-
-	plt.figure()
-	for i in range(mc.num_distributions()):
-		(x,tv) = mc.distribution_tv_mixing(i)
-		plt.plot(x, tv)
-
-	plt.xlabel("t")
-	plt.ylabel("Distance to stationary distribution in total variation")
-	plt.show()	
-
-def nx_graph_analyze_nbrw(G): # pragma: no cover
-	import networkx as nx
-	import matplotlib.pyplot as plt
-
-	mc = mkm.nx_graph_nbrw(G)
-	mc.add_distributions(mkm.random_delta_distributions(mc.get_n(),5))
-	
-	mc.compute_tv_mixing()
-
-	plt.figure()
-	for i in range(mc.num_distributions()):
-		(x,tv) = mc.distribution_tv_mixing(i)
-		plt.plot(x, tv)
-
-	plt.xlabel("t")
-	plt.ylabel("Distance to stationary distribution in total variation")
-	plt.show()	

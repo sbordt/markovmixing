@@ -267,7 +267,7 @@ class MarkovChain:
 				last = self.get_last_iteration(i)
 				last_iterated = mkm.iterate_distributions(self.p,last,100)
 						
-				# is 1e-6 a good threshold?
+				# is 1e-6 a good threshold? (however this can never be trusted -> cutoff)
 				if mkm.relative_error(last,last_iterated) > 1e-6:
 					return
 
@@ -501,9 +501,8 @@ class MarkovChain:
 		plt.ylim(0, 1)
 
 		if text:
-			plt.title("Convergence to the stationary distribution")
 			plt.xlabel("t")
-			plt.ylabel("Total variation distance to the stationary distribution")
+			plt.ylabel("Total variation distance to stationarity")
 
 		plt.show()
 
