@@ -15,10 +15,10 @@ mc.plot_tv_mixing(y_tol=0.01, threshold=0.01)
 
 
 ####################### BIASED LINE EXAMPLE #########################
-# create a transition matrix
+# create the transition matrix
 P = mkm.line_lazy_transition_matrix(1000, p=0.51)
 
-# create a MarkovChain with the given transition matrix
+# create the MarkovChain with the given transition matrix
 mc = mkm.MarkovChain(P)
     
 # add some initial distributions

@@ -31,10 +31,10 @@ And now some examples!
 
 ### Biased random walk on the line
 
-    # create a transition matrix
+    # create the transition matrix
     P = mkm.line_lazy_transition_matrix(1000, p=0.51)
 
-    # create a MarkovChain with the given transition matrix
+    # create the MarkovChain with the given transition matrix
     mc = mkm.MarkovChain(P)
     
     # add some initial distributions
@@ -114,7 +114,7 @@ Iterating distributions produces 'iterations'.
     print mc.get_iterations(1)
     {0: array([ 1.,  0.,  0.,  0.,  0.]), 1: array([ 0.5 ,  0.25,  0.  ,  0.  ,  0.25]), 2: array([ 0.375 ,  0.25  ,  0.0625,  0.0625,  0.25  ]), 4: array([ 0.2734375 ,  0.22265625,  0.140625  ,  0.140625  ,  0.22265625]), 8: array([ 0.21347046,  0.2041626 ,  0.18910217,  0.18910217,  0.2041626 ])}
     
-Given these iterations, mixing can be computed. For total-variation distance, there is an additional utility method.
+Given these iterations (i.e. evolved initial distributions), mixing can be computed. For total-variation distance, there is a utility method.
 
     (t,tv) = mc.distribution_tv_mixing(1)
     
@@ -180,7 +180,7 @@ To create a MarkovChain from a networkx graph, use one of the following.
     nx_graph_lazy_srw(G)
     nx_graph_nbrw(G)
 
-As always, we finally have some utility methods :-)
+As always, we have some utility methods :-)
 
     is_transition_matrix(P)
     lazy(P)
