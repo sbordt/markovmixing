@@ -171,7 +171,7 @@ These methods create transition matrices.
     graph_srw_transition_matrix(A)
     graph_nbrw_transition_matrix(A)
     line_lazy_transition_matrix(n, p = 0.5)
-    ircle_transition_matrix(n, p = 0.5, lazy = True)
+    circle_transition_matrix(n, p = 0.5, lazy = True)
     hypercube_transition_matrix(n, lazy = True)
     
 To create a MarkovChain from a networkx graph, use one of the following.
